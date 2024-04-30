@@ -37,6 +37,21 @@
         font-size: 1.5em;
         flex: 1;
       }
+      /* Style for solo and mute buttons */
+      .track-control {
+        margin: 0.5em;
+        padding: 0.5em 1em;
+        background-color: #444;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      .track-control.solo {
+        background-color: #4CAF50; /* Green */
+      }
+      .track-control.mute {
+        background-color: #f44336; /* Red */
+      }
     </style>
   </head>
 
@@ -55,6 +70,9 @@
         <button id="play">Play</button>
         <button id="forward">Forward 30s</button>
         <button id="backward">Back 30s</button>
+        <!-- Solo and Mute buttons for demonstration -->
+        <button class="track-control solo" id="solo">Solo Track</button>
+        <button class="track-control mute" id="mute">Mute Track</button>
       </div>
 
       <div id="container"></div>
