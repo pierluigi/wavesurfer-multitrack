@@ -43,6 +43,8 @@ export type TrackOptions = {
     color?: string
   }
   options?: SingleTrackOptions
+  solo?: boolean
+  mute?: boolean
 }
 
 export type MultitrackOptions = {
@@ -69,13 +71,15 @@ export type MultitrackEvents = {
   'volume-change': [{ id: TrackId; volume: number }]
   'intro-end-change': [{ id: TrackId; endTime: number }]
   drop: [{ id: TrackId }]
+  'solo-change': [{ id: TrackId; solo: boolean }]
+  'mute-change': [{ id: TrackId; mute: boolean }]
 }
 
 export type MultitrackTracks = Array<TrackOptions>
 
 const PLACEHOLDER_TRACK = {
   id: 'placeholder',
-  url: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU2LjM2LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzU2LjQxAAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFN//MUZAMAAAGkAAAAAAAAA0gAAAAARTMu//MUZAYAAAGkAAAAAAAAA0gAAAAAOTku//MUZAkAAAGkAAAAAAAAA0gAAAAANVVV',
+  url: 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU2LjM2LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV1dXV6urq6urq6urq6urq6urq6urq6urq6urq6v////////////////////////////////8AAAAATGF2YzUyLjQxAAAAAAAAAAAAAAAAJAAAAAAAAAAAASDs90hvAAAAAAAAAAAAAAAAAAAA//MUZAAAAAGkAAAAAAAAA0gAAAAATEFN//MUZAMAAAGkAAAAAAAAA0gAAAAARTMu//MUZAYAAAGkAAAAAAAAA0gAAAAAOTku//MUZAkAAAGkAAAAAAAAA0gAAAAANVVV',
   peaks: [[0]],
   startPosition: 0,
   options: { height: 0 },
@@ -94,6 +98,7 @@ class MultiTrack extends EventEmitter<MultitrackEvents> {
   private frameRequest: number | null = null
   private subscriptions: Array<() => void> = []
   private audioContext: AudioContext
+  private soloTrackId: TrackId | null = null
 
   static create(tracks: MultitrackTracks, options: MultitrackOptions): MultiTrack {
     return new MultiTrack(tracks, options)
@@ -108,6 +113,8 @@ class MultiTrack extends EventEmitter<MultitrackEvents> {
       ...track,
       startPosition: track.startPosition || 0,
       peaks: track.peaks || (track.url || track.options?.media ? undefined : [new Float32Array()]),
+      solo: track.solo || false,
+      mute: track.mute || false,
     }))
     this.options = options
 
@@ -580,6 +587,40 @@ class MultiTrack extends EventEmitter<MultitrackEvents> {
 
   public setEnvelopePoints(trackIndex: number, points: EnvelopePoint[]) {
     this.envelopes[trackIndex]?.setPoints(points)
+  }
+
+  public soloTrack(trackId: TrackId) {
+    this.soloTrackId = trackId;
+    this.tracks.forEach((track, index) => {
+      if (track.id !== trackId) {
+        this.audios[index].muted = true;
+      } else {
+        this.audios[index].muted = false;
+      }
+    });
+    this.emit('solo-change', { id: trackId, solo: true });
+  }
+
+  public muteTrack(trackId: TrackId, mute: boolean) {
+    const trackIndex = this.tracks.findIndex(track => track.id === trackId);
+    if (trackIndex !== -1) {
+      this.audios[trackIndex].muted = mute;
+      this.emit('mute-change', { id: trackId, mute });
+    }
+  }
+
+  public updateTrackStates() {
+    if (this.soloTrackId !== null) {
+      this.tracks.forEach((track, index) => {
+        if (track.id !== this.soloTrackId) {
+          this.audios[index].muted = true;
+        }
+      });
+    } else {
+      this.tracks.forEach((track, index) => {
+        this.audios[index].muted = track.mute || false;
+      });
+    }
   }
 }
 

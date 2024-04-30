@@ -8,6 +8,8 @@ const multitrack = Multitrack.create(
   [
     {
       id: 0,
+      solo: false,
+      mute: false,
     },
     {
       id: 1,
@@ -52,6 +54,8 @@ const multitrack = Multitrack.create(
           color: 'hsla(200, 50%, 70%, 0.5)',
         },
       ],
+      solo: false,
+      mute: false,
       // peaks: [ [ 0, 0, 2.567, -2.454, 10.5645 ] ], // optional pre-generated peaks
     },
     {
@@ -69,6 +73,8 @@ const multitrack = Multitrack.create(
         progressColor: 'hsl(161, 87%, 20%)',
       },
       url: '/examples/audio/audio.wav',
+      solo: false,
+      mute: false,
     },
     {
       id: 3,
@@ -80,6 +86,8 @@ const multitrack = Multitrack.create(
         progressColor: 'hsl(161, 87%, 20%)',
       },
       url: '/examples/audio/demo.wav',
+      solo: false,
+      mute: false,
     },
   ],
   {
@@ -176,6 +184,27 @@ const slider = document.querySelector('input[type="range"]')
 slider.oninput = () => {
   multitrack.zoom(slider.valueAsNumber)
 }
+
+// Solo and Mute buttons functionality
+const soloButton = document.querySelector('#solo')
+const muteButton = document.querySelector('#mute')
+
+soloButton.addEventListener('click', () => {
+  const trackId = prompt('Enter the ID of the track to solo:')
+  if (trackId !== null) {
+    multitrack.soloTrack(parseInt(trackId, 10))
+  }
+})
+
+muteButton.addEventListener('click', () => {
+  const trackId = prompt('Enter the ID of the track to mute/unmute:')
+  if (trackId !== null) {
+    const track = multitrack.tracks.find(t => t.id === parseInt(trackId, 10))
+    if (track) {
+      multitrack.muteTrack(track.id, !track.mute)
+    }
+  }
+})
 
 // Destroy all wavesurfer instances on unmount
 // This should be called before calling initMultiTrack again to properly clean up
